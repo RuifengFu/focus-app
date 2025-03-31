@@ -1,0 +1,46 @@
+{
+  "identifier": "com.focus-app.dev",
+  "productName": "专注助手",
+  "version": "0.1.0",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "title": "专注助手",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Focus App",
+    "category": "Productivity",
+    "shortDescription": "专注助手",
+    "longDescription": "一个帮助你集中注意力的应用"
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
