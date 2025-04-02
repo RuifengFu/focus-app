@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
+use rodio::{Decoder, OutputStream, Sink};
+use std::fs::File;
+use std::io::BufReader;
 
 #[derive(Serialize, Deserialize)]
 pub struct TimerStatus {
@@ -24,6 +27,7 @@ pub struct PomodoroTimer {
     work_time_today: AtomicU64,
     work_time_start: AtomicU64,
     daily_work_hours: AtomicU64,
+    sound_enabled: Mutex<bool>,
 }
 
 impl PomodoroTimer {
@@ -39,6 +43,7 @@ impl PomodoroTimer {
             work_time_today: AtomicU64::new(0),
             work_time_start: AtomicU64::new(0),
             daily_work_hours: AtomicU64::new(8),
+            sound_enabled: Mutex::new(true),
         }
     }
     
@@ -50,6 +55,8 @@ impl PomodoroTimer {
         if !self.is_break.load(Ordering::SeqCst) {
             self.work_time_start.store(now, Ordering::SeqCst);
         }
+        
+        self.play_notification(self.is_break.load(Ordering::SeqCst));
         
         self.get_status()
     }
@@ -84,7 +91,37 @@ impl PomodoroTimer {
         self.elapsed_time.store(0, Ordering::SeqCst);
         self.get_status()
     }
-    
+
+    pub fn skip_current(&self) -> serde_json::Value {
+        let current_is_break = self.is_break.load(Ordering::SeqCst);
+        self.is_break.store(!current_is_break, Ordering::SeqCst);
+        
+        if self.is_running.load(Ordering::SeqCst) && !current_is_break {
+            let now = Local::now().timestamp() as u64;
+            let work_start = self.work_time_start.load(Ordering::SeqCst);
+            let work_time = now - work_start;
+            self.work_time_today.fetch_add(work_time, Ordering::SeqCst);
+        }
+        
+        self.elapsed_time.store(0, Ordering::SeqCst);
+        
+        if self.is_running.load(Ordering::SeqCst) {
+            self.start_time.store(Local::now().timestamp() as u64, Ordering::SeqCst);
+            
+            if !self.is_break.load(Ordering::SeqCst) {
+                self.work_time_start.store(Local::now().timestamp() as u64, Ordering::SeqCst);
+            }
+            
+            self.play_notification(self.is_break.load(Ordering::SeqCst));
+            
+            self.is_running.store(false, Ordering::SeqCst);
+        } else {
+            self.play_notification(self.is_break.load(Ordering::SeqCst));
+        }
+        
+        self.get_status()
+    }
+
     pub fn update_settings(&self, work_time_minutes: u64, break_time_minutes: u64, daily_work_hours: u64) -> serde_json::Value {
         let was_running = self.is_running.load(Ordering::SeqCst);
         if was_running {
@@ -160,6 +197,8 @@ impl PomodoroTimer {
                 self.work_time_today.fetch_add(work_time, Ordering::SeqCst);
             }
             
+            self.play_notification(!is_break);
+            
             self.is_break.store(!is_break, Ordering::SeqCst);
             self.elapsed_time.store(0, Ordering::SeqCst);
             
@@ -187,6 +226,73 @@ impl PomodoroTimer {
             "work_duration_seconds": work_duration_seconds,
             "break_duration_seconds": break_duration_seconds,
             "daily_work_hours": self.daily_work_hours.load(Ordering::SeqCst),
+        })
+    }      
+
+    fn play_notification(&self, is_break: bool) {
+        if !*self.sound_enabled.lock().unwrap() {
+            return;
+        }
+        
+        let sound_file = if is_break {
+            "peaceful_chimes.wav"
+        } else {
+            "focus_pulse.wav"
+        };
+        
+        std::thread::spawn(move || {
+            let possible_paths = vec![
+                std::env::current_exe()
+                    .ok()
+                    .and_then(|path| path.parent().map(|p| p.join("resources").join("notification_sounds").join(sound_file))),
+                
+                Some(std::path::PathBuf::from("src-tauri").join("resources").join("notification_sounds").join(sound_file)),
+                
+                Some(std::path::PathBuf::from("resources").join("notification_sounds").join(sound_file)),
+            ];
+            
+            let sound_path = possible_paths.into_iter()
+                .flatten()
+                .find(|path| path.exists());
+            
+            match sound_path {
+                Some(path) => {
+                    match File::open(&path) {
+                        Ok(file) => {
+                            let (_stream, stream_handle) = match OutputStream::try_default() {
+                                Ok(s) => s,
+                                Err(_) => return,
+                            };
+                            
+                            let sink = match Sink::try_new(&stream_handle) {
+                                Ok(sink) => sink,
+                                Err(_) => return,
+                            };
+                            
+                            let reader = BufReader::new(file);
+                            
+                            match Decoder::new(reader) {
+                                Ok(source) => {
+                                    sink.append(source);
+                                    sink.sleep_until_end();
+                                },
+                                Err(_) => {},
+                            }
+                        },
+                        Err(_) => {},
+                    }
+                },
+                None => {},
+            }
+        });
+    }
+
+    pub fn toggle_sound(&self, enabled: bool) -> serde_json::Value {
+        let mut sound_enabled = self.sound_enabled.lock().unwrap();
+        *sound_enabled = enabled;
+        
+        json!({
+            "sound_enabled": enabled
         })
     }
 }

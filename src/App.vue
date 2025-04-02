@@ -20,6 +20,8 @@
           @startTimer="startTimer"
           @pauseTimer="pauseTimer"
           @resetTimer="resetTimer"
+          @skipTimer="skipTimer"
+          @toggleSound="toggleSound"
           @updateSettings="updateTimerSettings"
         />
         
@@ -72,7 +74,7 @@ export default {
     setInterval(() => {
       this.refreshTimerStatus();
       this.refreshTimeStats();
-    }, 1000);
+    }, 500); 
   },
   
   methods: {
@@ -173,6 +175,22 @@ export default {
         });
       } catch (error) {
         console.error('Error updating timer settings:', error);
+      }
+    },
+    
+    async skipTimer() {
+      try {
+        this.timerStatus = await invoke('skip_timer');
+      } catch (error) {
+        console.error('Error skipping timer:', error);
+      }
+    },
+    
+    async toggleSound(enabled) {
+      try {
+        await invoke('toggle_sound', { enabled });
+      } catch (error) {
+        console.error('Error toggling sound:', error);
       }
     },
   },

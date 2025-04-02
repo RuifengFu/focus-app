@@ -107,6 +107,7 @@ export default {
 .quote-container {
   margin-bottom: 20px;
   position: relative;
+  padding-right: 40px; /* 为按钮留出空间 */
 }
 
 .quote {
@@ -114,6 +115,7 @@ export default {
   font-size: 1.1rem;
   line-height: 1.6;
   color: #333;
+  margin-right: 5px; /* 确保与按钮有一定距离 */
 }
 
 .refresh-btn {
@@ -124,6 +126,8 @@ export default {
   border: none;
   color: #3498db;
   cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.9rem;
 }
 
 .stats-container {

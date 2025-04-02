@@ -3,7 +3,6 @@ use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::{Local, Datelike, Timelike};
-use std::fs;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Quote {
@@ -24,9 +23,12 @@ pub struct QuotesManager {
 
 impl QuotesManager {
     pub fn new() -> Self {
-        // 从资源文件加载名言
-        let quotes = Self::load_quotes_from_file().unwrap_or_else(|_| {
-            println!("警告: 无法加载引用文件，使用默认引用");
+        // 直接使用 include_str! 宏嵌入 JSON 文件内容
+        let quotes_json = include_str!("../resources/quotes.json");
+        
+        // 解析 JSON
+        let quotes: Vec<Quote> = serde_json::from_str(quotes_json).unwrap_or_else(|e| {
+            eprintln!("警告: 解析引用文件时出错: {}", e);
             vec![
                 Quote {
                     text: "行动是治愈恐惧的良药。".to_string(),
@@ -45,31 +47,6 @@ impl QuotesManager {
         }
     }
     
-    fn load_quotes_from_file() -> Result<Vec<Quote>, Box<dyn std::error::Error>> {
-        // 获取资源文件路径 - 在应用目录下查找
-        let resource_path = match std::env::current_exe() {
-            Ok(mut path) => {
-                path.pop(); // 移除可执行文件名
-                // 开发环境和生产环境可能有不同的路径
-                if path.ends_with("target/debug") || path.ends_with("target/release") {
-                    path.pop();
-                    path.pop();
-                }
-                path.push("src-tauri/resources/quotes.json");
-                path
-            },
-            Err(_) => "src-tauri/resources/quotes.json".into()
-        };
-        
-        // 读取文件内容
-        let file_content = fs::read_to_string(&resource_path)?;
-        
-        // 解析 JSON
-        let quotes: Vec<Quote> = serde_json::from_str(&file_content)?;
-        
-        Ok(quotes)
-    }
-    
     pub fn get_random_quote(&self) -> String {
         let mut rng = thread_rng();
         if let Some(quote) = self.quotes.choose(&mut rng) {
@@ -83,7 +60,7 @@ impl QuotesManager {
         let now = Local::now();
         
         // 计算年龄相关信息
-        let birth_year = now.year() - 30; // 假设用户30岁，可以在实际应用中获取
+        let birth_year = now.year() - 25; // 假设用户25岁，可以在实际应用中获取
         let age = now.year() - birth_year;
         let life_percentage = (age as f64 / self.stats.average_life_expectancy as f64) * 100.0;
         

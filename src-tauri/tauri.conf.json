@@ -36,7 +36,11 @@
     "publisher": "Focus App",
     "category": "Productivity",
     "shortDescription": "专注助手",
-    "longDescription": "一个帮助你集中注意力的应用"
+    "longDescription": "一个帮助你集中注意力的应用",
+    "resources": [
+      "resources/*",
+      "resources/notification_sounds/*.wav"
+    ]
   },
   "plugins": {
     "shell": {

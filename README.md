@@ -83,6 +83,11 @@ npm install
 
 # 安装 Tauri CLI
 npm install -g @tauri-apps/cli
+
+npm install @tauri-apps/plugin-fs
+
+#生成音乐
+python scripts/notification_voice.py
 ```
 
 ### 4. 项目结构说明

@@ -71,12 +71,26 @@
     </div>
     
     <div class="timer-controls">
-      <button @click="toggleTimer" :disabled="timerStatus.remaining_seconds <= 0"
-              :class="{ 'active': timerStatus.is_running }">
+      <button @click="toggleTimer()" :disabled="settingsChanged">
         {{ timerStatus.is_running ? '暂停' : '开始' }}
       </button>
-      <button @click="resetTimer">重置</button>
+      <button @click="resetTimer()">重置</button>
+      
+      <!-- 添加跳过当前状态的按钮 -->
+      <button @click="$emit('skipTimer')" class="skip-btn">
+        跳过{{ timerStatus.is_break ? '休息' : '工作' }}
+      </button>
+
       <button @click="applySettings" :disabled="!settingsChanged">应用设置</button>
+
+      
+      <!-- 添加声音控制 -->
+      <div class="sound-control">
+        <label>
+          <input type="checkbox" v-model="soundEnabled" @change="$emit('toggleSound', soundEnabled)">
+          提示音
+        </label>
+      </div>
     </div>
     
     <div class="pomodoro-count">
@@ -105,7 +119,8 @@ export default {
         workTimeMinutes: 25,
         breakTimeMinutes: 5,
         dailyWorkHours: 8
-      }
+      },
+      soundEnabled: true, // 默认启用声音提示
     };
   },
   
@@ -411,5 +426,35 @@ export default {
   text-align: center;
   font-size: 0.9rem;
   color: #666;
+}
+
+/* 跳过按钮样式 */
+.skip-btn {
+  background-color: #9b59b6; /* 紫色按钮，区别于其他按钮 */
+  color: white;
+}
+
+.skip-btn:hover:not(:disabled) {
+  background-color: #8e44ad;
+}
+
+/* 声音控制样式 */
+.sound-control {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sound-control label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.sound-control input {
+  margin-right: 5px;
 }
 </style>

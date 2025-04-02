@@ -35,6 +35,8 @@ fn main() {
             start_timer,
             pause_timer,
             reset_timer,
+            skip_timer,
+            toggle_sound,
             update_timer_settings,
             get_timer_status,
             get_random_quote,
@@ -100,4 +102,14 @@ fn get_time_spent_stats(state: State<AppState>) -> serde_json::Value {
 #[tauri::command]
 fn update_timer_settings(state: State<AppState>, work_time_minutes: u64, break_time_minutes: u64, daily_work_hours: u64) -> serde_json::Value {
     state.timer.lock().unwrap().update_settings(work_time_minutes, break_time_minutes, daily_work_hours)
+}
+
+#[tauri::command]
+fn skip_timer(state: State<AppState>) -> serde_json::Value {
+    state.timer.lock().unwrap().skip_current()
+}
+
+#[tauri::command]
+fn toggle_sound(state: State<AppState>, enabled: bool) -> serde_json::Value {
+    state.timer.lock().unwrap().toggle_sound(enabled)
 }
